@@ -1,0 +1,72 @@
+package config
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+type Config struct {
+	// App
+	AppPort int    `mapstructure:"APP_PORT"`
+	AppEnv  string `mapstructure:"APP_ENV"`
+
+	// JWT
+	JWTSecret        string        `mapstructure:"JWT_SECRET"`
+	JWTExpiry        time.Duration `mapstructure:"JWT_EXPIRY"`
+	JWTRefreshExpiry time.Duration `mapstructure:"JWT_REFRESH_EXPIRY"`
+
+	// gRPC
+	GRPCAuthAddr string `mapstructure:"GRPC_AUTH_ADDR"`
+	GRPCCoreAddr string `mapstructure:"GRPC_CORE_ADDR"`
+
+	// Logging
+	LogLevel string `mapstructure:"LOG_LEVEL"`
+
+	// CORS
+	CORSAllowedOrigins string `mapstructure:"CORS_ALLOWED_ORIGINS"`
+}
+
+// Load loads configuration from environment variables
+func Load() (*Config, error) {
+	v := viper.New()
+
+	// Set defaults
+	v.SetDefault("APP_PORT", 8080)
+	v.SetDefault("APP_ENV", "development")
+	v.SetDefault("JWT_EXPIRY", 15*time.Minute)
+	v.SetDefault("JWT_REFRESH_EXPIRY", 7*24*time.Hour)
+	v.SetDefault("LOG_LEVEL", "info")
+	v.SetDefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+	v.SetDefault("JWT_SECRET", "change_me_to_a_strong_secret_at_least_32_chars")
+
+	// Read from environment variables only (not .env file)
+	v.AutomaticEnv()
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("error unmarshaling config: %w", err)
+	}
+
+	// Validate required fields
+	if err := validate(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+func validate(cfg *Config) error {
+	fmt.Printf("Config: %+v\n", cfg)
+	if cfg.JWTSecret == "" || len(cfg.JWTSecret) < 32 {
+		return fmt.Errorf("JWT_SECRET is required and must be at least 32 characters")
+	}
+	if cfg.GRPCAuthAddr == "" {
+		return fmt.Errorf("GRPC_AUTH_ADDR is required")
+	}
+	if cfg.GRPCCoreAddr == "" {
+		return fmt.Errorf("GRPC_CORE_ADDR is required")
+	}
+	return nil
+}
