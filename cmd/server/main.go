@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/uncle3dev/velotrax-gateway-go/internal/config"
+	"github.com/uncle3dev/velotrax-gateway-go/internal/db"
 	"github.com/uncle3dev/velotrax-gateway-go/internal/grpc/client"
 	"github.com/uncle3dev/velotrax-gateway-go/internal/router"
 	"go.uber.org/zap/zapcore"
@@ -38,6 +39,24 @@ func main() {
 		zap.String("env", cfg.AppEnv),
 		zap.Int("port", cfg.AppPort),
 	)
+
+	// Initialize MongoDB
+	mongoDB, err := db.Connect(context.Background(), cfg.MongoURI)
+	if err != nil {
+		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := mongoDB.Disconnect(shutdownCtx); err != nil {
+			logger.Error("MongoDB disconnect error", zap.Error(err))
+		}
+	}()
+	logger.Info("Connected to MongoDB", zap.String("uri", cfg.MongoURI))
+
+	if err := db.EnsureIndexes(context.Background(), mongoDB.Database); err != nil {
+		logger.Fatal("Failed to ensure MongoDB indexes", zap.Error(err))
+	}
 
 	// Initialize gRPC clients
 	authClient, err := client.NewAuthClient(cfg.GRPCAuthAddr)

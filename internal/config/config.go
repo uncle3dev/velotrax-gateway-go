@@ -26,6 +26,9 @@ type Config struct {
 
 	// CORS
 	CORSAllowedOrigins string `mapstructure:"CORS_ALLOWED_ORIGINS"`
+
+	// MongoDB
+	MongoURI string `mapstructure:"MONGO_URI"`
 }
 
 // Load loads configuration from environment variables
@@ -43,6 +46,16 @@ func Load() (*Config, error) {
 
 	// Read from environment variables only (not .env file)
 	v.AutomaticEnv()
+	v.BindEnv("APP_PORT")
+	v.BindEnv("APP_ENV")
+	v.BindEnv("JWT_SECRET")
+	v.BindEnv("JWT_EXPIRY")
+	v.BindEnv("JWT_REFRESH_EXPIRY")
+	v.BindEnv("GRPC_AUTH_ADDR")
+	v.BindEnv("GRPC_CORE_ADDR")
+	v.BindEnv("LOG_LEVEL")
+	v.BindEnv("CORS_ALLOWED_ORIGINS")
+	v.BindEnv("MONGO_URI")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -67,6 +80,9 @@ func validate(cfg *Config) error {
 	}
 	if cfg.GRPCCoreAddr == "" {
 		return fmt.Errorf("GRPC_CORE_ADDR is required")
+	}
+	if cfg.MongoURI == "" {
+		return fmt.Errorf("MONGO_URI is required")
 	}
 	return nil
 }

@@ -11,7 +11,24 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    environment:
-      - JWT_SECRET=${JWT_SECRET}
-      - GRPC_AUTH_ADDR=${GRPC_AUTH_ADDR}
-      - GRPC_CORE_ADDR=${GRPC_CORE_ADDR}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  mongodb:
+    image: mongo:8.0
+    container_name: velotrax-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo_data:
