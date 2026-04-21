@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"time"
 
 	auth "github.com/uncle3dev/velotrax-gateway-go/internal/gen/auth"
 	"google.golang.org/grpc"
@@ -18,14 +17,9 @@ type AuthClient struct {
 
 // NewAuthClient creates a new AuthClient
 func NewAuthClient(addr string) (*AuthClient, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to auth service: %w", err)

@@ -24,7 +24,7 @@ type Handler struct {
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
-	FullName string `json:"full_name" validate:"required"`
+	FullName string `json:"fullName" validate:"required"`
 }
 
 type LoginRequest struct {
@@ -57,7 +57,7 @@ func (h *Handler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
-
+	h.logger.Info("register request", zap.Any("request", req))
 	if err := h.validator.Struct(&req); err != nil {
 		h.logger.Warn("validation error", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "validation error"})
