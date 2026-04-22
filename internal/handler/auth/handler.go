@@ -108,10 +108,22 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token":  resp.AccessToken,
-		"refresh_token": resp.RefreshToken,
-		"expires_in":    resp.ExpiresIn,
+	// Log successful login
+	h.logger.Info("Successful user login",
+		zap.String("access_token", resp.AccessToken),
+		zap.String("refresh_token", resp.RefreshToken),
+		zap.Int64("expires_in", resp.ExpiresIn),
+		zap.String("user_id", resp.User.Id),
+		zap.String("email", resp.User.Email),
+		zap.Strings("roles", resp.User.Roles),
+	)
+
+	// ✅ Trả về struct LoginResponse
+	c.JSON(http.StatusOK, &auth.LoginResponse{
+		AccessToken:  resp.AccessToken,
+		RefreshToken: resp.RefreshToken,
+		ExpiresIn:    resp.ExpiresIn, // Chuyển int64 -> int
+		User:         resp.User,      // Trả về UserDetail nếu có
 	})
 }
 

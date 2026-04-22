@@ -24,10 +24,18 @@ message LoginRequest {
   string password = 2;
 }
 
+// Represents basic identifying information for a user.
+message UserDetail {
+  string id = 1;
+  string email = 2;
+  repeated string roles = 3;
+}
+
 message LoginResponse {
   string access_token = 1;
   string refresh_token = 2;
   int64 expires_in = 3;  // seconds
+  UserDetail user = 4;
 }
 
 message LogoutRequest {
