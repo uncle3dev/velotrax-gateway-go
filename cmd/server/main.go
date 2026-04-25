@@ -67,6 +67,14 @@ func main() {
 
 	logger.Info("Connected to auth service", zap.String("addr", cfg.GRPCAuthAddr))
 
+	orderClient, err := client.NewOrderClient(cfg.GRPCCoreAddr)
+	if err != nil {
+		logger.Fatal("Failed to connect to order service", zap.Error(err))
+	}
+	defer orderClient.Close()
+
+	logger.Info("Connected to core service", zap.String("addr", cfg.GRPCCoreAddr))
+
 	// Set Gin mode
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -78,7 +86,7 @@ func main() {
 	engine := gin.New()
 
 	// Setup routes
-	router.Setup(engine, authClient, logger, cfg.JWTSecret)
+	router.Setup(engine, authClient, orderClient, logger, cfg.JWTSecret)
 
 	// HTTP server
 	srv := &http.Server{

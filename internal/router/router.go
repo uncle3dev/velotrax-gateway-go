@@ -6,6 +6,7 @@ import (
 
 	"github.com/uncle3dev/velotrax-gateway-go/internal/grpc/client"
 	authHandler "github.com/uncle3dev/velotrax-gateway-go/internal/handler/auth"
+	orderHandler "github.com/uncle3dev/velotrax-gateway-go/internal/handler/order"
 	"github.com/uncle3dev/velotrax-gateway-go/internal/middleware"
 )
 
@@ -13,6 +14,7 @@ import (
 func Setup(
 	engine *gin.Engine,
 	authClient *client.AuthClient,
+	orderClient *client.OrderClient,
 	logger *zap.Logger,
 	jwtSecret string,
 ) {
@@ -23,6 +25,7 @@ func Setup(
 
 	// Auth handlers
 	authH := authHandler.NewHandler(authClient, logger)
+	orderH := orderHandler.NewHandler(orderClient, logger)
 
 	// ── Public routes ──────────────────────────────────────────────────
 	v1 := engine.Group("/v1")
@@ -46,6 +49,15 @@ func Setup(
 		authRefresh.Use(middleware.RequireRefreshToken(jwtSecret, logger))
 		{
 			authRefresh.POST("/refresh", authH.RefreshToken)
+		}
+
+		orders := v1.Group("/orders")
+		orders.Use(middleware.RequireAuth(jwtSecret, logger))
+		{
+			orders.GET("", orderH.List)
+			orders.POST("", orderH.List)
+			orders.GET("/:id", orderH.Get)
+			orders.GET("/:id/tracking", orderH.Tracking)
 		}
 	}
 

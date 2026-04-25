@@ -11,9 +11,8 @@ import (
 )
 
 type CustomClaims struct {
-	UserID string   `json:"sub"`
-	Roles  []string `json:"roles"`
-	Type   string   `json:"type"` // "access" or "refresh"
+	Roles []string `json:"roles"`
+	Type  string   `json:"type"` // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
@@ -63,7 +62,7 @@ func RequireAuth(secret string, logger *zap.Logger) gin.HandlerFunc {
 		}
 
 		// Inject into context
-		c.Set("userID", claims.UserID)
+		c.Set("userID", claims.Subject)
 		c.Set("roles", claims.Roles)
 
 		c.Next()
@@ -116,7 +115,7 @@ func RequireRefreshToken(secret string, logger *zap.Logger) gin.HandlerFunc {
 		}
 
 		// Inject into context
-		c.Set("userID", claims.UserID)
+		c.Set("userID", claims.Subject)
 
 		c.Next()
 	}

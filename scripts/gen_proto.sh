@@ -20,11 +20,14 @@ protoc \
   --go-grpc_opt=paths=source_relative \
   --plugin=protoc-gen-go="$GOBIN/protoc-gen-go" \
   --plugin=protoc-gen-go-grpc="$GOBIN/protoc-gen-go-grpc" \
-  "$PROTO_DIR/auth/auth.proto"
+  "$PROTO_DIR/auth/auth.proto" \
+  "$PROTO_DIR/order/order.proto"
 
 # Move to internal/gen
 mkdir -p internal/gen/auth
+mkdir -p internal/gen/order
 mv proto/auth/auth.pb.go proto/auth/auth_grpc.pb.go internal/gen/auth/ 2>/dev/null || true
+mv proto/order/order.pb.go proto/order/order_grpc.pb.go internal/gen/order/ 2>/dev/null || true
 rm -rf proto/auth/__pycache__ proto/__pycache__ 2>/dev/null || true
 
-echo "✓ Protobuf code generated in internal/gen/auth/"
+echo "✓ Protobuf code generated in internal/gen/"
