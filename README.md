@@ -9,7 +9,7 @@ API Gateway bằng Go cho hệ thống logistics `velotrax`. Dự án này nhậ
 - Forward request sang:
   - `velotrax-auth-go` qua gRPC cho auth/user flow
   - `velotrax-core-go` qua gRPC cho order flow
-- Kết nối MongoDB để tạo database/index khi khởi động
+- Kết nối MongoDB và tạo indexes khi khởi động
 - Ghi log request theo format JSON bằng Zap
 
 ## Tech Stack
@@ -59,6 +59,26 @@ docker-compose.yml        # gateway + mongodb
 - `POST /v1/auth/login`
 - `POST /v1/auth/logout`
 - `POST /v1/auth/refresh`
+- `GET /v1/auth/profile`
+- `PUT /v1/auth/profile`
+
+`POST /v1/auth/refresh` cần header `Authorization: Bearer <refresh-token>` và body:
+
+```json
+{
+  "refresh_token": "<refresh-token>"
+}
+```
+
+`PUT /v1/auth/profile` nhận body tùy chọn:
+
+```json
+{
+  "email": "new@email.com",
+  "userName": "new-name",
+  "roles": ["ADMIN"]
+}
+```
 
 ### Orders
 
@@ -66,6 +86,18 @@ docker-compose.yml        # gateway + mongodb
 - `POST /v1/orders`
 - `GET /v1/orders/:id`
 - `GET /v1/orders/:id/tracking`
+
+`GET /v1/orders` dùng query params `page`, `pageSize`, `status`.
+
+`POST /v1/orders` nhận body tùy chọn với các field tương tự:
+
+```json
+{
+  "page": 1,
+  "pageSize": 20,
+  "status": "pending"
+}
+```
 
 ### Health
 
@@ -78,6 +110,7 @@ docker-compose.yml        # gateway + mongodb
   - `access` cho route cần access token
   - `refresh` cho route refresh token
 - Gateway lấy user id từ claim chuẩn `sub` thông qua `jwt.RegisteredClaims.Subject`.
+- `/v1/auth/profile` forward access token xuống auth service trong field `access_token`.
 - Với route orders, gateway forward nguyên header `Authorization` sang gRPC metadata.
 
 Lưu ý:
@@ -129,7 +162,7 @@ File tham chiếu: [.env.example](/Users/uncle3/Projects/velotrax-gateway-go/.en
 | `GRPC_AUTH_ADDR` | Địa chỉ gRPC của auth service | Có |
 | `GRPC_CORE_ADDR` | Địa chỉ gRPC của core/order service | Có |
 | `LOG_LEVEL` | `debug` / `info` / `warn` / `error` | Không |
-| `CORS_ALLOWED_ORIGINS` | Origin được phép gọi từ browser; hiện middleware CORS vẫn đang cho phép `*` | Không |
+| `CORS_ALLOWED_ORIGINS` | Origin được phép gọi từ browser; hiện middleware CORS vẫn đang trả `*` nên biến này chưa được áp dụng | Không |
 | `MONGO_URI` | Mongo connection string | Có |
 
 ## Scripts / lệnh hữu ích
@@ -162,5 +195,7 @@ Từ [Makefile](/Users/uncle3/Projects/velotrax-gateway-go/Makefile):
 - File nguồn là `proto/auth/auth.proto` và `proto/order/order.proto`
 - Code sinh ra nằm trong `internal/gen/`
 - Script `scripts/gen_proto.sh` gọi `protoc`, sau đó move file sinh ra vào `internal/gen/`
+- `UserDetail` hiện có `id`, `email`, `user_name`, `roles`
+- `PUT /v1/auth/profile` có thể cập nhật `email`, `userName`, `roles`
 
 Không sửa tay các file trong `internal/gen/` nếu có thể tránh được.

@@ -43,6 +43,8 @@
 - JWT access token phải có `type = access`
 - JWT refresh token phải có `type = refresh`
 - Gateway đọc user id từ claim chuẩn `sub` qua `jwt.RegisteredClaims.Subject`
+- `GET /v1/auth/profile` và `PUT /v1/auth/profile` lấy access token từ `Authorization` rồi forward xuống auth service trong field `access_token`
+- `POST /v1/auth/refresh` cần header `Authorization: Bearer <refresh-token>` và body `refresh_token`
 - Route `/v1/orders/*` forward nguyên `Authorization: Bearer <token>` sang gRPC metadata
 - Nếu token thiếu `sub`, downstream có thể trả `Unauthenticated: missing subject`
 - `CORS_ALLOWED_ORIGINS` đang có trong config nhưng middleware CORS hiện trả `*`

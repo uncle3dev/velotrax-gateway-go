@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -38,6 +39,12 @@ type LogoutRequest struct {
 
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+type UpdateProfileRequest struct {
+	Email    *string  `json:"email" validate:"omitempty,email"`
+	UserName string   `json:"userName" validate:"omitempty"`
+	Roles    []string `json:"roles" validate:"omitempty,dive,required"`
 }
 
 // NewHandler creates a new Auth handler
@@ -115,6 +122,7 @@ func (h *Handler) Login(c *gin.Context) {
 		zap.Int64("expires_in", resp.ExpiresIn),
 		zap.String("user_id", resp.User.Id),
 		zap.String("email", resp.User.Email),
+		zap.String("user_name", resp.User.UserName),
 		zap.Strings("roles", resp.User.Roles),
 	)
 
@@ -180,6 +188,60 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	})
 }
 
+// GetProfile handles GET /v1/auth/profile.
+func (h *Handler) GetProfile(c *gin.Context) {
+	accessToken, ok := accessTokenFromHeader(c.GetHeader("Authorization"))
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid authorization header"})
+		return
+	}
+
+	resp, err := h.authClient.GetProfile(c.Request.Context(), &auth.GetProfileRequest{
+		AccessToken: accessToken,
+	})
+	if err != nil {
+		h.respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// UpdateProfile handles PUT /v1/auth/profile.
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	accessToken, ok := accessTokenFromHeader(c.GetHeader("Authorization"))
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid authorization header"})
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("invalid update profile request", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		h.logger.Warn("validation error", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "validation error"})
+		return
+	}
+
+	resp, err := h.authClient.UpdateProfile(c.Request.Context(), &auth.UpdateProfileRequest{
+		AccessToken: accessToken,
+		Email:       valueOrEmpty(req.Email),
+		UserName:    req.UserName,
+		Roles:       req.Roles,
+	})
+	if err != nil {
+		h.respondError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 // respondError maps gRPC status codes to HTTP status codes
 func (h *Handler) respondError(c *gin.Context, err error) {
 	st, ok := status.FromError(err)
@@ -207,7 +269,34 @@ func (h *Handler) respondError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid argument"})
 	case codes.Unavailable, codes.DeadlineExceeded:
 		c.JSON(http.StatusBadGateway, gin.H{"error": "service unavailable"})
+	case codes.Unimplemented:
+		c.JSON(http.StatusBadGateway, gin.H{"error": "service not ready"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 	}
+}
+
+func accessTokenFromHeader(authHeader string) (string, bool) {
+	if authHeader == "" {
+		return "", false
+	}
+
+	const bearerPrefix = "Bearer "
+	if !strings.HasPrefix(authHeader, bearerPrefix) {
+		return "", false
+	}
+
+	token := strings.TrimSpace(authHeader[len(bearerPrefix):])
+	if token == "" {
+		return "", false
+	}
+
+	return token, true
+}
+
+func valueOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

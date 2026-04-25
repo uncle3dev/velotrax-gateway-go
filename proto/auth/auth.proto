@@ -28,7 +28,27 @@ message LoginRequest {
 message UserDetail {
   string id = 1;
   string email = 2;
-  repeated string roles = 3;
+  string user_name = 3;
+  repeated string roles = 4;
+}
+
+message GetProfileRequest {
+  string access_token = 1;
+}
+
+message GetProfileResponse {
+  UserDetail user = 1;
+}
+
+message UpdateProfileRequest {
+  string access_token = 1;
+  string email = 2;
+  string user_name = 3;
+  repeated string roles = 4;
+}
+
+message UpdateProfileResponse {
+  UserDetail user = 1;
 }
 
 message LoginResponse {
@@ -64,4 +84,6 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
 }

@@ -53,6 +53,16 @@ func (c *AuthClient) RefreshToken(ctx context.Context, req *auth.RefreshTokenReq
 	return c.client.RefreshToken(ctx, req)
 }
 
+// GetProfile calls the GetProfile RPC.
+func (c *AuthClient) GetProfile(ctx context.Context, req *auth.GetProfileRequest) (*auth.GetProfileResponse, error) {
+	return c.client.GetProfile(ctx, req)
+}
+
+// UpdateProfile calls the UpdateProfile RPC.
+func (c *AuthClient) UpdateProfile(ctx context.Context, req *auth.UpdateProfileRequest) (*auth.UpdateProfileResponse, error) {
+	return c.client.UpdateProfile(ctx, req)
+}
+
 // Close closes the gRPC connection
 func (c *AuthClient) Close() error {
 	return c.conn.Close()

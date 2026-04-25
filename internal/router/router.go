@@ -42,6 +42,8 @@ func Setup(
 		authProtected.Use(middleware.RequireAuth(jwtSecret, logger))
 		{
 			authProtected.POST("/logout", authH.Logout)
+			authProtected.GET("/profile", authH.GetProfile)
+			authProtected.PUT("/profile", authH.UpdateProfile)
 		}
 
 		// Token refresh (protected - refresh token)
